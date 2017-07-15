@@ -155,7 +155,7 @@ macro_rules! handle_cmp {
 
 fn handler(req: &mut Request) -> IronResult<Response> {
     let path = req.url.path();
-    println!("GET /{}", path.join("/"));
+    info!("GET /{}", path.join("/"));
     if path.len() < 4 {
         return Ok(Response::with((
             status::BadRequest,

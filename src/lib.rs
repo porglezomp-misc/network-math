@@ -1,5 +1,7 @@
 #[macro_use]
 extern crate lazy_static;
+#[macro_use]
+extern crate log;
 extern crate reqwest;
 extern crate iron;
 
@@ -14,7 +16,7 @@ lazy_static! {
     static ref MATH_URL: RwLock<Option<String>> = RwLock::new(None);
 }
 
-#[derive(Debug)]
+#[derive(Debug, Copy, Clone)]
 pub struct NetMath<T>(pub T);
 
 impl<T> NetMath<T> {
@@ -41,7 +43,7 @@ impl<T: Display> Display for NetMath<T> {
 }
 
 macro_rules! impl_net_operator {
-    ($T:ty, $Op:ident, $op:ident) => {
+    ($T:ty, $Op:ident, $OpAssign:ident, $op:ident, $op_assign:ident) => {
         impl ::std::ops::$Op for NetMath<$T> {
             type Output = NetMath<$T>;
             fn $op(self, rhs: Self) -> Self {
@@ -61,11 +63,18 @@ macro_rules! impl_net_operator {
                 NetMath(result.parse().expect("Couldn't parse response"))
             }
         }
+
+        impl ::std::ops::$OpAssign for NetMath<$T> {
+            fn $op_assign(&mut self, rhs: Self) {
+                use std::ops::$Op;
+                *self = NetMath(self.0).$op(rhs);
+            }
+        }
     }
 }
 
 macro_rules! impl_net_shift {
-    ($T:ty, $Op:ident < $($U:ty),* >, $op:ident) => {
+    ($T:ty, $Op:ident < $($U:ty),* >, $OpAssign:ident, $op:ident, $op_assign:ident) => {
         $(
             impl ::std::ops::$Op <$U> for NetMath<$T> {
                 type Output = NetMath<$T>;
@@ -87,6 +96,13 @@ macro_rules! impl_net_shift {
                     NetMath(result.parse().expect("Couldn't parse response"))
                 }
             }
+
+            impl ::std::ops::$OpAssign <$U> for NetMath<$T> {
+                fn $op_assign(&mut self, rhs: $U) {
+                    use std::ops::$Op;
+                    *self = NetMath(self.0).$op(rhs);
+                }
+            }
         )*
     }
 }
@@ -94,11 +110,11 @@ macro_rules! impl_net_shift {
 macro_rules! impl_netmath {
     ($($T:ty),*) => {
         $(
-            impl_net_operator!($T, Add, add);
-            impl_net_operator!($T, Sub, sub);
-            impl_net_operator!($T, Mul, mul);
-            impl_net_operator!($T, Div, div);
-            impl_net_operator!($T, Rem, rem);
+            impl_net_operator!($T, Add, AddAssign, add, add_assign);
+            impl_net_operator!($T, Sub, SubAssign, sub, sub_assign);
+            impl_net_operator!($T, Mul, MulAssign, mul, mul_assign);
+            impl_net_operator!($T, Div, DivAssign, div, div_assign);
+            impl_net_operator!($T, Rem, RemAssign, rem, rem_assign);
 
             impl PartialEq for NetMath<$T> {
                 fn eq(&self, rhs: &Self) -> bool {
@@ -148,13 +164,13 @@ macro_rules! impl_netmath {
 macro_rules! impl_netbits {
     ($($T:ty),*) => {
         $(
-            impl_net_operator!($T, BitAnd, bitand);
-            impl_net_operator!($T, BitOr, bitor);
-            impl_net_operator!($T, BitXor, bitxor);
-            impl_net_shift!($T, Shl<u8, u16, u32, u64>, shl);
-            impl_net_shift!($T, Shl<i8, i16, i32, i64>, shl);
-            impl_net_shift!($T, Shr<u8, u16, u32, u64>, shr);
-            impl_net_shift!($T, Shr<i8, i16, i32, i64>, shr);
+            impl_net_operator!($T, BitAnd, BitAndAssign, bitand, bitand_assign);
+            impl_net_operator!($T, BitOr, BitOrAssign, bitor, bitor_assign);
+            impl_net_operator!($T, BitXor, BitXorAssign, bitxor, bitxor_assign);
+            impl_net_shift!($T, Shl<u8, u16, u32, u64>, ShlAssign, shl, shl_assign);
+            impl_net_shift!($T, Shl<i8, i16, i32, i64>, ShlAssign, shl, shl_assign);
+            impl_net_shift!($T, Shr<u8, u16, u32, u64>, ShrAssign, shr, shr_assign);
+            impl_net_shift!($T, Shr<i8, i16, i32, i64>, ShrAssign, shr, shr_assign);
         )*
     }
 }
@@ -165,11 +181,3 @@ impl_netmath!(f32, f64);
 
 impl_netbits!(u8, u16, u32, u64);
 impl_netbits!(i8, i16, i32, i64);
-
-
-#[cfg(test)]
-mod tests {
-    #[test]
-    fn it_works() {
-    }
-}
