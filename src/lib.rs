@@ -1,6 +1,18 @@
+#[macro_use]
+extern crate lazy_static;
 extern crate reqwest;
+extern crate iron;
 
 use std::fmt::Display;
+use std::sync::RwLock;
+
+use iron::error::HttpResult;
+
+mod server;
+
+lazy_static! {
+    static ref MATH_URL: RwLock<Option<String>> = RwLock::new(None);
+}
 
 #[derive(Debug)]
 pub struct NetMath<T>(pub T);
@@ -8,6 +20,17 @@ pub struct NetMath<T>(pub T);
 impl<T> NetMath<T> {
     pub fn new(x: T) -> Self {
         NetMath(x)
+    }
+}
+
+impl NetMath<()> {
+    pub fn start_server(url: &str) -> HttpResult<iron::Listening> {
+        Self::set_url(url);
+        server::start_server(url)
+    }
+
+    pub fn set_url(url: &str) {
+        *MATH_URL.write().unwrap() = Some(String::from(url));
     }
 }
 
@@ -24,7 +47,8 @@ macro_rules! impl_net_operator {
             fn $op(self, rhs: Self) -> Self {
                 use std::io::Read;
                 let url = format!(
-                    "http://localhost:4242/{op}/{type}/{lhs}/{rhs}",
+                    "http://{base}/{op}/{type}/{lhs}/{rhs}",
+                    base=MATH_URL.read().unwrap().as_ref().unwrap(),
                     op=stringify!($op),
                     type=stringify!($T),
                     lhs=self.0,
@@ -48,7 +72,8 @@ macro_rules! impl_net_shift {
                 fn $op(self, rhs: $U) -> Self {
                     use std::io::Read;
                     let url = format!(
-                        "http://localhost:4242/{op}/{type}/{shift_type}/{lhs}/{rhs}",
+                        "http://{base}/{op}/{type}/{shift_type}/{lhs}/{rhs}",
+                        base=MATH_URL.read().unwrap().as_ref().unwrap(),
                         op=stringify!($op),
                         type=stringify!($T),
                         shift_type=stringify!($U),
@@ -79,7 +104,8 @@ macro_rules! impl_netmath {
                 fn eq(&self, rhs: &Self) -> bool {
                     use std::io::Read;
                     let url = format!(
-                        "http://localhost:4242/eq/{type}/{lhs}/{rhs}",
+                        "http://{base}/eq/{type}/{lhs}/{rhs}",
+                        base=MATH_URL.read().unwrap().as_ref().unwrap(),
                         type=stringify!($T),
                         lhs=self.0,
                         rhs=rhs.0,
@@ -96,7 +122,8 @@ macro_rules! impl_netmath {
                 fn partial_cmp(&self, rhs: &Self) -> Option<::std::cmp::Ordering> {
                     use std::io::Read;
                     let url = format!(
-                        "http://localhost:4242/cmp/{type}/{lhs}/{rhs}",
+                        "http://{base}/cmp/{type}/{lhs}/{rhs}",
+                        base=MATH_URL.read().unwrap().as_ref().unwrap(),
                         type=stringify!($T),
                         lhs=self.0,
                         rhs=rhs.0,
