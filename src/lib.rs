@@ -2,8 +2,8 @@
 extern crate lazy_static;
 #[macro_use]
 extern crate log;
-extern crate reqwest;
 extern crate iron;
+extern crate reqwest;
 
 use std::fmt::Display;
 use std::sync::RwLock;

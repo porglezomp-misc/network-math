@@ -1,7 +1,7 @@
 #[macro_use]
 extern crate log;
-extern crate network_math;
 extern crate env_logger;
+extern crate network_math;
 
 use network_math::NetMath;
 

@@ -1,8 +1,8 @@
-use std::ops::{Add, Sub, Mul, Div, Rem, BitAnd, BitOr, BitXor, Shl, Shr};
+use std::ops::{Add, BitAnd, BitOr, BitXor, Div, Mul, Rem, Shl, Shr, Sub};
 use std::str::FromStr;
 
-use iron::prelude::*;
 use iron::error::HttpResult;
+use iron::prelude::*;
 use iron::{self, status};
 
 pub fn start_server(url: &str) -> HttpResult<iron::Listening> {
@@ -10,7 +10,8 @@ pub fn start_server(url: &str) -> HttpResult<iron::Listening> {
 }
 
 fn parse_val<T: FromStr>(text: &str) -> Result<T, IronError>
-    where T::Err: ::std::error::Error + Send + 'static
+where
+    T::Err: ::std::error::Error + Send + 'static,
 {
     text.parse()
         .map_err(|err| IronError::new(err, status::BadRequest))
