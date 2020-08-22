@@ -8,7 +8,7 @@ edition = "2018"
 reqwest = "0.7"
 iron = "0.5"
 
-lazy_static = "0.2"
+once_cell = "1.4.1"
 
 log = "0.3"
 env_logger = "0.4"

@@ -1,9 +1,8 @@
 #[macro_use]
-extern crate lazy_static;
-#[macro_use]
 extern crate log;
 extern crate iron;
 extern crate reqwest;
+use once_cell::sync::Lazy;
 
 use std::fmt::Display;
 use std::sync::RwLock;
@@ -12,9 +11,7 @@ use iron::error::HttpResult;
 
 mod server;
 
-lazy_static! {
-    static ref MATH_URL: RwLock<Option<String>> = RwLock::new(None);
-}
+static MATH_URL: Lazy<RwLock<Option<String>>> = Lazy::new(|| RwLock::new(None));
 
 #[derive(Debug, Copy, Clone)]
 pub struct NetMath<T>(pub T);
